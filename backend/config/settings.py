@@ -18,6 +18,7 @@ DEBUG = os.getenv("DEBUG", "True").lower() == "true"
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
+    "freshmart-shop-wuqc.onrender.com",
 ]
 
 INSTALLED_APPS = [
