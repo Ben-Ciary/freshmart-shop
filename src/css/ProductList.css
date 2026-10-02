@@ -1,0 +1,204 @@
+.hero {
+  background: linear-gradient(
+    135deg,
+    var(--green-900),
+    var(--green-700)
+  );
+  color: #fff;
+  border-radius: 20px;
+  padding: 28px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  position: relative;
+}
+
+.hero::after {
+  content: "";
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  right: -60px;
+  top: -70px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+
+.hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.hero h2 {
+  margin: 0;
+  font-size: 26px;
+  line-height: 1.25;
+  font-weight: 800;
+  color: #fff;
+}
+
+.hero p {
+  margin: 7px 0 0;
+  color: #d1fae5;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.hero .search {
+  width: min(100%, 380px);
+  max-width: 380px;
+  margin: 0;
+}
+
+/* =========================
+   PRODUCT GRID
+========================= */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(215px, 1fr)
+  );
+  gap: 18px;
+}
+
+/* =========================
+   LOADING SKELETON
+========================= */
+
+.skeleton {
+  height: 275px;
+  border-radius: 18px;
+  background: linear-gradient(
+    90deg,
+    #e2e8f0 25%,
+    #f8fafc 50%,
+    #e2e8f0 75%
+  );
+  background-size: 200% 100%;
+  animation: shine 1.2s infinite;
+}
+
+@keyframes shine {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* =========================
+   TABLET
+========================= */
+
+@media (max-width: 900px) {
+  .hero {
+    padding: 24px;
+  }
+
+  .hero h2 {
+    font-size: 23px;
+  }
+
+  .hero .search {
+    width: min(100%, 350px);
+  }
+
+  .grid {
+    grid-template-columns: repeat(
+      auto-fill,
+      minmax(195px, 1fr)
+    );
+    gap: 16px;
+  }
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 760px) {
+  .hero {
+    padding: 22px;
+    border-radius: 17px;
+    gap: 17px;
+  }
+
+  .hero h2 {
+    font-size: 21px;
+  }
+
+  .hero p {
+    font-size: 13px;
+  }
+
+  .hero .search {
+    width: 100%;
+    max-width: none;
+  }
+
+  .grid {
+    grid-template-columns: repeat(
+      2,
+      minmax(0, 1fr)
+    );
+    gap: 14px;
+  }
+
+  .skeleton {
+    height: 245px;
+    border-radius: 17px;
+  }
+}
+
+/* =========================
+   SMALL PHONES
+========================= */
+
+@media (max-width: 480px) {
+  .hero {
+    padding: 20px 16px;
+    border-radius: 16px;
+    margin-bottom: 18px;
+  }
+
+  .hero h2 {
+    font-size: 19px;
+  }
+
+  .hero p {
+    font-size: 12px;
+  }
+
+  .grid {
+    gap: 11px;
+  }
+
+  .skeleton {
+    height: 220px;
+    border-radius: 15px;
+  }
+}
+
+/* =========================
+   VERY SMALL PHONES
+========================= */
+
+@media (max-width: 360px) {
+  .hero {
+    padding: 18px 14px;
+  }
+
+  .hero h2 {
+    font-size: 18px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

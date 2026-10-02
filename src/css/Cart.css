@@ -1,0 +1,294 @@
+.cart-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 24px;
+  align-items: start;
+}
+
+/* =========================
+   CART ITEMS
+========================= */
+
+.cart-list {
+  background: #fff;
+  border-radius: 20px;
+  padding: 8px 22px;
+  box-shadow: var(--shadow-sm);
+}
+
+.cart-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
+  transition: background 0.2s ease;
+}
+
+.cart-row:last-child {
+  border-bottom: none;
+}
+
+.cart-row:hover {
+  background: #fafdfb;
+}
+
+/* Product emoji */
+
+.cart-emoji {
+  flex-shrink: 0;
+  width: 62px;
+  height: 62px;
+  display: grid;
+  place-items: center;
+  font-size: 32px;
+  background: var(--green-50);
+  border-radius: 15px;
+}
+
+/* Product information */
+
+.cart-info {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.cart-info b {
+  font-size: 15px;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.cart-info span {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* =========================
+   QUANTITY
+========================= */
+
+.qty {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.qty button {
+  width: 34px;
+  height: 34px;
+  border: none;
+  background: #f8fafc;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.qty button:hover:not(:disabled) {
+  background: var(--green-50);
+  color: var(--green-700);
+}
+
+.qty button:disabled {
+  color: #cbd5e1;
+  cursor: not-allowed;
+}
+
+.qty span {
+  min-width: 34px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* =========================
+   PRICE
+========================= */
+
+.line-total {
+  min-width: 105px;
+  text-align: right;
+  font-weight: 800;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+/* =========================
+   REMOVE
+========================= */
+
+.remove {
+  flex-shrink: 0;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 17px;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    background 0.2s ease;
+}
+
+.remove:hover {
+  color: #dc2626;
+  background: #fef2f2;
+}
+
+/* =========================
+   ORDER SUMMARY
+========================= */
+
+.summary {
+  position: sticky;
+  top: 84px;
+  background: #fff;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.summary h3 {
+  margin: 0 0 18px;
+  font-size: 18px;
+}
+
+.summary .btn {
+  margin-top: 10px;
+}
+
+/* =========================
+   MOBILE / TABLET
+========================= */
+
+@media (max-width: 900px) {
+  .cart-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .summary {
+    position: static;
+  }
+}
+
+@media (max-width: 700px) {
+  .cart-list {
+    padding: 6px 16px;
+    border-radius: 17px;
+  }
+
+  .cart-row {
+    gap: 12px;
+    padding: 16px 0;
+  }
+
+  .cart-emoji {
+    width: 54px;
+    height: 54px;
+    font-size: 28px;
+  }
+
+  .cart-info b {
+    font-size: 14px;
+  }
+
+  .cart-info span {
+    font-size: 12px;
+  }
+
+  .qty button {
+    width: 31px;
+    height: 31px;
+  }
+
+  .qty span {
+    min-width: 30px;
+    font-size: 13px;
+  }
+
+  .line-total {
+    min-width: auto;
+    font-size: 14px;
+  }
+
+  .summary {
+    padding: 20px;
+    border-radius: 17px;
+  }
+}
+
+/* =========================
+   SMALL PHONES
+========================= */
+
+@media (max-width: 480px) {
+  .cart-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 10px;
+  }
+
+  .cart-emoji {
+    width: 48px;
+    height: 48px;
+    font-size: 25px;
+    border-radius: 13px;
+  }
+
+  .cart-info {
+    min-width: 0;
+  }
+
+  .qty {
+    grid-column: 2 / 3;
+    justify-self: start;
+  }
+
+  .line-total {
+    grid-column: 2 / 3;
+    text-align: left;
+    font-size: 14px;
+  }
+
+  .remove {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .summary {
+    padding: 18px;
+    border-radius: 16px;
+  }
+}
+
+/* =========================
+   VERY SMALL PHONES
+========================= */
+
+@media (max-width: 360px) {
+  .cart-list {
+    padding: 5px 12px;
+  }
+
+  .cart-row {
+    gap: 8px;
+  }
+
+  .cart-info b {
+    font-size: 13px;
+  }
+
+  .line-total {
+    font-size: 13px;
+  }
+}
