@@ -1,1239 +1,245 @@
-package com.example.freshmart
+import { useCallback, useEffect, useState } from "react";
+import AdminOrders from "./components/AdminOrders";
+import Header from "./components/Header";
+import ProductList from "./components/ProductList";
+import Cart from "./components/Cart";
+import Checkout from "./components/Checkout";
+import Login from "./components/Login";
+import Orders from "./components/Orders";
+import Toast from "./components/Toast";
 
-import android.content.Intent
-import android.net.Uri
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.unit.dp
-import com.example.freshmart.ui.theme.FreshMartTheme
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONArray
-import org.json.JSONObject
+import { api, clearToken, getToken, saveToken } from "./api";
 
-private const val API_URL =
-    "https://freshmart-shop-wuqc.onrender.com/api"
+const EMPTY_CART = {
+  items: [],
+  total: 0,
+};
 
-private const val WEBSITE_URL =
-    "https://freshmart-shop-ciary.netlify.app/"
+export default function App() {
+  const params = new URLSearchParams(window.location.search);
+  const mobileToken = params.get("mobile_token");
 
-private val httpClient = OkHttpClient()
+  const [user, setUser] = useState(null);
+  const [booting, setBooting] = useState(
+    Boolean(getToken()) || Boolean(mobileToken),
+  );
+  const [view, setView] = useState(localStorage.getItem("shop_view") || "shop");
+  const [cart, setCart] = useState(EMPTY_CART);
+  const [toast, setToast] = useState(null);
 
-class MainActivity : ComponentActivity() {
+  const notify = useCallback((msg, type = "ok") => {
+    setToast({
+      msg,
+      type,
+      id: Date.now(),
+    });
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+    setTimeout(() => {
+      setToast(null);
+    }, 3000);
+  }, []);
 
-        setContent {
-            FreshMartTheme {
-                FreshMartApp()
-            }
-        }
-    }
-}
+  const go = (nextView) => {
+    setView(nextView);
+    localStorage.setItem("shop_view", nextView);
+    window.scrollTo(0, 0);
+  };
 
-data class Product(
-    val id: Int,
-    val name: String,
-    val price: String
-)
+  const clearSession = useCallback(() => {
+    clearToken();
+    localStorage.removeItem("shop_view");
+    setUser(null);
+    setCart(EMPTY_CART);
+  }, []);
 
-data class CartItem(
-    val id: Int,
-    val productId: Int,
-    val productName: String,
-    val price: String,
-    val quantity: Int
-)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tokenFromMobile = params.get("mobile_token");
 
-@Composable
-fun FreshMartApp() {
+    if (tokenFromMobile) {
+      saveToken(tokenFromMobile);
 
-    var loggedIn by remember {
-        mutableStateOf(false)
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
 
-    var accessToken by remember {
-        mutableStateOf("")
+    const token = getToken();
+
+    if (!token) {
+      setBooting(false);
+      return;
     }
 
-    if (loggedIn) {
-
-        FreshMartHome(
-            token = accessToken,
-            onLogout = {
-                accessToken = ""
-                loggedIn = false
-            }
-        )
-
-    } else {
-
-        LoginScreen(
-            onLoginSuccess = { token ->
-                accessToken = token
-                loggedIn = true
-            }
-        )
-    }
-}
-
-@Composable
-fun LoginScreen(
-    onLoginSuccess: (String) -> Unit
-) {
-
-    var email by remember {
-        mutableStateOf("")
-    }
-
-    var password by remember {
-        mutableStateOf("")
-    }
-
-    var message by remember {
-        mutableStateOf("")
-    }
-
-    var loading by remember {
-        mutableStateOf(false)
-    }
-
-    val scope = rememberCoroutineScope()
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-
-        Text("FreshMart")
-
-        Spacer(
-            modifier = Modifier.height(30.dp)
-        )
-
-        OutlinedTextField(
-            value = email,
-            onValueChange = {
-                email = it
-            },
-            label = {
-                Text("Email")
-            },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(
-            modifier = Modifier.height(16.dp)
-        )
-
-        OutlinedTextField(
-            value = password,
-            onValueChange = {
-                password = it
-            },
-            label = {
-                Text("Password")
-            },
-            visualTransformation =
-                PasswordVisualTransformation(),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(
-            modifier = Modifier.height(20.dp)
-        )
-
-        Button(
-            onClick = {
-
-                if (
-                    email.isBlank() ||
-                    password.isBlank()
-                ) {
-                    message =
-                        "Please enter your email and password."
-                    return@Button
-                }
-
-                loading = true
-                message = "Logging in..."
-
-                scope.launch {
-
-                    val result =
-                        loginUser(
-                            email,
-                            password
-                        )
-
-                    loading = false
-
-                    if (result.first) {
-
-                        val token = result.second
-
-                        val websiteUrl =
-                            WEBSITE_URL +
-                                "?mobile_token=" +
-                                Uri.encode(token)
-
-                        val intent = Intent(
-                            Intent.ACTION_VIEW,
-                            Uri.parse(websiteUrl)
-                        )
-
-                        startActivity(intent)
-
-                    } else {
-
-                        message = result.second
-                    }
-                }
-            },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !loading
-        ) {
-
-            Text(
-                if (loading)
-                    "Please wait..."
-                else
-                    "Login"
-            )
-        }
-
-        Spacer(
-            modifier = Modifier.height(16.dp)
-        )
-
-        Text(message)
-    }
-}
-
-suspend fun loginUser(
-    email: String,
-    password: String
-): Pair<Boolean, String> {
-
-    return withContext(Dispatchers.IO) {
+    api("/auth/me")
+      .then(async (currentUser) => {
+        setUser(currentUser);
 
         try {
-
-            val json = JSONObject()
-
-            json.put(
-                "email",
-                email
-            )
-
-            json.put(
-                "password",
-                password
-            )
-
-            val body =
-                json.toString()
-                    .toRequestBody(
-                        "application/json; charset=utf-8"
-                            .toMediaType()
-                    )
-
-            val request =
-                Request.Builder()
-                    .url(
-                        "$API_URL/auth/login"
-                    )
-                    .post(body)
-                    .addHeader(
-                        "Content-Type",
-                        "application/json"
-                    )
-                    .build()
-
-            val response =
-                httpClient
-                    .newCall(request)
-                    .execute()
-
-            val responseBody =
-                response.body?.string()
-                    ?: ""
-
-            if (!response.isSuccessful) {
-
-                return@withContext Pair(
-                    false,
-                    "Invalid email or password."
-                )
-            }
-
-            val responseJson =
-                JSONObject(responseBody)
-
-            val tokens =
-                responseJson.optJSONObject(
-                    "tokens"
-                )
-
-            val token =
-                tokens?.optString("access")
-                    ?: ""
-
-            if (token.isNotEmpty()) {
-
-                Pair(
-                    true,
-                    token
-                )
-
-            } else {
-
-                Pair(
-                    false,
-                    "Login succeeded but token was not received."
-                )
-            }
-
-        } catch (e: Exception) {
-
-            Pair(
-                false,
-                "Connection error: ${e.message}"
-            )
+          const currentCart = await api("/cart");
+          setCart(currentCart);
+        } catch {
+          setCart(EMPTY_CART);
         }
+      })
+      .catch(() => {
+        clearSession();
+      })
+      .finally(() => {
+        setBooting(false);
+      });
+  }, [clearSession]);
+
+  const handleAuth = async (data) => {
+    try {
+      const { tokens, user } = data;
+
+      if (!tokens?.access) {
+        throw new Error("Login succeeded, but no access token was received.");
+      }
+
+      saveToken(tokens.access);
+      localStorage.setItem("shop_last_email", user.email);
+
+      setUser(user);
+
+      try {
+        const currentCart = await api("/cart");
+        setCart(currentCart);
+      } catch {
+        setCart(EMPTY_CART);
+      }
+
+      go("shop");
+      notify(`Welcome, ${user.name}!`);
+    } catch (error) {
+      notify(error.message || "Login failed.", "error");
     }
-}
+  };
 
-/*
- * The functions below are kept from your previous Android app.
- * They are no longer used for the main login flow, but keeping them
- * here means we are not rebuilding or deleting your existing code.
- */
+  const logout = () => {
+    clearSession();
+    go("shop");
+  };
 
-@Composable
-fun FreshMartHome(
-    token: String,
-    onLogout: () -> Unit
-) {
-
-    var products by remember {
-        mutableStateOf<List<Product>>(
-            emptyList()
-        )
+  const reloadCart = async () => {
+    try {
+      const currentCart = await api("/cart");
+      setCart(currentCart);
+    } catch {
+      setCart(EMPTY_CART);
     }
+  };
 
-    var cartItems by remember {
-        mutableStateOf<List<CartItem>>(
-            emptyList()
-        )
+  const run = async (fn, successMessage) => {
+    try {
+      const updatedCart = await fn();
+
+      setCart(updatedCart);
+
+      if (successMessage) {
+        notify(successMessage);
+      }
+    } catch (error) {
+      console.error("Cart error:", error);
+      notify(error.message || "Something went wrong.", "error");
     }
-
-    var showingCart by remember {
-        mutableStateOf(false)
-    }
-
-    var message by remember {
-        mutableStateOf("Loading...")
-    }
-
-    var loading by remember {
-        mutableStateOf(true)
-    }
-
-    val scope = rememberCoroutineScope()
-
-    suspend fun refreshAll() {
-
-        loading = true
-
-        val productResult =
-            getProducts(token)
-
-        if (productResult.first) {
-            products = productResult.second
-        }
-
-        val cartResult =
-            getCart(token)
-
-        if (cartResult.first) {
-            cartItems = cartResult.second
-            message = ""
-        } else {
-            message = cartResult.third
-        }
-
-        loading = false
-    }
-
-    LaunchedEffect(Unit) {
-
-        refreshAll()
-    }
-
-    if (showingCart) {
-
-        CartScreen(
-            cartItems = cartItems,
-            token = token,
-            onBack = {
-                showingCart = false
-            },
-            onRefresh = {
-                scope.launch {
-
-                    val result =
-                        getCart(token)
-
-                    if (result.first) {
-                        cartItems = result.second
-                    }
-                }
-            }
-        )
-
-    } else {
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-        ) {
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement =
-                    Arrangement.SpaceBetween,
-                verticalAlignment =
-                    Alignment.CenterVertically
-            ) {
-
-                Text("FreshMart")
-
-                Row {
-
-                    Button(
-                        onClick = {
-                            showingCart = true
-                        }
-                    ) {
-
-                        Text(
-                            "Cart (${cartItems.sumOf { it.quantity }})"
-                        )
-                    }
-                }
-            }
-
-            Spacer(
-                modifier = Modifier.height(16.dp)
-            )
-
-            Button(
-                onClick = {
-                    scope.launch {
-                        refreshAll()
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-
-                Text("Refresh")
-            }
-
-            Spacer(
-                modifier = Modifier.height(12.dp)
-            )
-
-            TextButton(
-                onClick = onLogout
-            ) {
-
-                Text("Logout")
-            }
-
-            if (loading) {
-
-                Text("Loading products...")
-
-            } else if (products.isEmpty()) {
-
-                Text(
-                    message.ifEmpty {
-                        "No products found."
-                    }
-                )
-
-            } else {
-
-                LazyColumn {
-
-                    items(products) { product ->
-
-                        ProductCard(
-                            product = product,
-                            token = token,
-                            onAdded = {
-
-                                scope.launch {
-
-                                    val result =
-                                        getCart(token)
-
-                                    if (result.first) {
-                                        cartItems =
-                                            result.second
-                                    }
-                                }
-                            }
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ProductCard(
-    product: Product,
-    token: String,
-    onAdded: () -> Unit
-) {
-
-    var adding by remember {
-        mutableStateOf(false)
-    }
-
-    var message by remember {
-        mutableStateOf("")
-    }
-
-    val scope = rememberCoroutineScope()
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 12.dp)
-    ) {
-
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-
-            Text(
-                text = product.name
-            )
-
-            Spacer(
-                modifier = Modifier.height(6.dp)
-            )
-
-            Text(
-                text = "KSh ${product.price}"
-            )
-
-            Spacer(
-                modifier = Modifier.height(10.dp)
-            )
-
-            Button(
-                onClick = {
-
-                    adding = true
-
-                    scope.launch {
-
-                        val result =
-                            addToCart(
-                                token,
-                                product.id
-                            )
-
-                        adding = false
-
-                        if (result.first) {
-
-                            message =
-                                "Added to cart!"
-
-                            onAdded()
-
-                        } else {
-
-                            message =
-                                result.second
-                        }
-                    }
-                },
-                enabled = !adding
-            ) {
-
-                Text(
-                    if (adding)
-                        "Adding..."
-                    else
-                        "Add to Cart"
-                )
-            }
-
-            if (message.isNotEmpty()) {
-
-                Spacer(
-                    modifier = Modifier.height(6.dp)
-                )
-
-                Text(message)
-            }
-        }
-    }
-}
-
-@Composable
-fun CartScreen(
-    cartItems: List<CartItem>,
-    token: String,
-    onBack: () -> Unit,
-    onRefresh: () -> Unit
-) {
-
-    var working by remember {
-        mutableStateOf(false)
-    }
-
-    val scope = rememberCoroutineScope()
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement =
-                Arrangement.SpaceBetween
-        ) {
-
-            Button(
-                onClick = onBack
-            ) {
-
-                Text("Back")
-            }
-
-            Button(
-                onClick = onRefresh
-            ) {
-
-                Text("Refresh")
-            }
-        }
-
-        Spacer(
-            modifier = Modifier.height(16.dp)
-        )
-
-        Text("My Cart")
-
-        Spacer(
-            modifier = Modifier.height(12.dp)
-        )
-
-        if (cartItems.isEmpty()) {
-
-            Text("Your cart is empty.")
-
-        } else {
-
-            LazyColumn {
-
-                items(
-                    items = cartItems,
-                    key = {
-                        it.id
-                    }
-                ) { item ->
-
-                    CartItemCard(
-                        item = item,
-                        token = token,
-                        working = working,
-                        onWorkingChange = {
-                            working = it
-                        },
-                        onRefresh = onRefresh
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun CartItemCard(
-    item: CartItem,
-    token: String,
-    working: Boolean,
-    onWorkingChange: (Boolean) -> Unit,
-    onRefresh: () -> Unit
-) {
-
-    val scope = rememberCoroutineScope()
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 12.dp)
-    ) {
-
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-
-            Text(
-                text = item.productName
-            )
-
-            Spacer(
-                modifier = Modifier.height(6.dp)
-            )
-
-            Text(
-                text = "KSh ${item.price}"
-            )
-
-            Spacer(
-                modifier = Modifier.height(10.dp)
-            )
-
-            Row(
-                verticalAlignment =
-                    Alignment.CenterVertically
-            ) {
-
-                Button(
-                    onClick = {
-
-                        if (item.quantity <= 1) {
-
-                            onWorkingChange(true)
-
-                            scope.launch {
-
-                                removeFromCart(
-                                    token,
-                                    item.id
-                                )
-
-                                onWorkingChange(false)
-
-                                onRefresh()
-                            }
-
-                        } else {
-
-                            onWorkingChange(true)
-
-                            scope.launch {
-
-                                updateCartQuantity(
-                                    token,
-                                    item.id,
-                                    item.quantity - 1
-                                )
-
-                                onWorkingChange(false)
-
-                                onRefresh()
-                            }
-                        }
-                    },
-                    enabled = !working
-                ) {
-
-                    Text("-")
-                }
-
-                Text(
-                    text = "  ${item.quantity}  ",
-                    modifier = Modifier.padding(
-                        horizontal = 8.dp
-                    )
-                )
-
-                Button(
-                    onClick = {
-
-                        onWorkingChange(true)
-
-                        scope.launch {
-
-                            updateCartQuantity(
-                                token,
-                                item.id,
-                                item.quantity + 1
-                            )
-
-                            onWorkingChange(false)
-
-                            onRefresh()
-                        }
-                    },
-                    enabled = !working
-                ) {
-
-                    Text("+")
-                }
-
-                Spacer(
-                    modifier = Modifier.weight(1f)
-                )
-
-                TextButton(
-                    onClick = {
-
-                        onWorkingChange(true)
-
-                        scope.launch {
-
-                            removeFromCart(
-                                token,
-                                item.id
-                            )
-
-                            onWorkingChange(false)
-
-                            onRefresh()
-                        }
-                    },
-                    enabled = !working
-                ) {
-
-                    Text("Remove")
-                }
-            }
-        }
-    }
-}
-
-suspend fun getProducts(
-    token: String
-): Pair<Boolean, List<Product>> {
-
-    return withContext(Dispatchers.IO) {
-
-        try {
-
-            val request =
-                Request.Builder()
-                    .url(
-                        "$API_URL/products/"
-                    )
-                    .get()
-                    .addHeader(
-                        "Authorization",
-                        "Bearer $token"
-                    )
-                    .build()
-
-            val response =
-                httpClient
-                    .newCall(request)
-                    .execute()
-
-            val body =
-                response.body?.string()
-                    ?: ""
-
-            if (!response.isSuccessful) {
-
-                return@withContext Pair(
-                    false,
-                    emptyList()
-                )
-            }
-
-            val json =
-                JSONArray(body)
-
-            val list =
-                mutableListOf<Product>()
-
-            for (i in 0 until json.length()) {
-
-                val item =
-                    json.getJSONObject(i)
-
-                list.add(
-                    Product(
-                        id =
-                            item.optInt("id"),
-                        name =
-                            item.optString(
-                                "name",
-                                "Product"
-                            ),
-                        price =
-                            item.optString(
-                                "price",
-                                "0"
-                            )
-                    )
-                )
-            }
-
-            Pair(
-                true,
-                list
-            )
-
-        } catch (e: Exception) {
-
-            Pair(
-                false,
-                emptyList()
-            )
-        }
-    }
-}
-
-suspend fun getCart(
-    token: String
-): Triple<Boolean, List<CartItem>, String> {
-
-    return withContext(Dispatchers.IO) {
-
-        try {
-
-            val request =
-                Request.Builder()
-                    .url(
-                        "$API_URL/cart/"
-                    )
-                    .get()
-                    .addHeader(
-                        "Authorization",
-                        "Bearer $token"
-                    )
-                    .build()
-
-            val response =
-                httpClient
-                    .newCall(request)
-                    .execute()
-
-            val body =
-                response.body?.string()
-                    ?: ""
-
-            if (!response.isSuccessful) {
-
-                return@withContext Triple(
-                    false,
-                    emptyList(),
-                    "Could not load cart."
-                )
-            }
-
-            val root =
-                JSONObject(body)
-
-            val itemsJson =
-                when {
-
-                    root.has("items") ->
-                        root.optJSONArray("items")
-
-                    root.has("cart_items") ->
-                        root.optJSONArray(
-                            "cart_items"
-                        )
-
-                    else ->
-                        JSONArray()
-                }
-
-            val list =
-                mutableListOf<CartItem>()
-
-            if (itemsJson != null) {
-
-                for (
-                    i in 0 until itemsJson.length()
-                ) {
-
-                    val item =
-                        itemsJson
-                            .getJSONObject(i)
-
-                    val product =
-                        item.optJSONObject(
-                            "product"
-                        )
-
-                    val productId =
-                        if (product != null) {
-                            product.optInt("id")
-                        } else {
-                            item.optInt(
-                                "product_id"
-                            )
-                        }
-
-                    val name =
-                        if (product != null) {
-                            product.optString(
-                                "name",
-                                "Product"
-                            )
-                        } else {
-                            item.optString(
-                                "product_name",
-                                "Product"
-                            )
-                        }
-
-                    val price =
-                        if (product != null) {
-                            product.optString(
-                                "price",
-                                "0"
-                            )
-                        } else {
-                            item.optString(
-                                "price",
-                                "0"
-                            )
-                        }
-
-                    list.add(
-                        CartItem(
-                            id =
-                                item.optInt("id"),
-                            productId =
-                                productId,
-                            productName =
-                                name,
-                            price =
-                                price,
-                            quantity =
-                                item.optInt(
-                                    "quantity",
-                                    1
-                                )
-                        )
-                    )
-                }
-            }
-
-            Triple(
-                true,
-                list,
-                ""
-            )
-
-        } catch (e: Exception) {
-
-            Triple(
-                false,
-                emptyList(),
-                "Could not connect to cart."
-            )
-        }
-    }
-}
-
-suspend fun addToCart(
-    token: String,
-    productId: Int
-): Pair<Boolean, String> {
-
-    return withContext(Dispatchers.IO) {
-
-        try {
-
-            val json =
-                JSONObject()
-
-            json.put(
-                "product_id",
-                productId
-            )
-
-            json.put(
-                "quantity",
-                1
-            )
-
-            val body =
-                json.toString()
-                    .toRequestBody(
-                        "application/json; charset=utf-8"
-                            .toMediaType()
-                    )
-
-            val request =
-                Request.Builder()
-                    .url(
-                        "$API_URL/cart/items"
-                    )
-                    .post(body)
-                    .addHeader(
-                        "Authorization",
-                        "Bearer $token"
-                    )
-                    .addHeader(
-                        "Content-Type",
-                        "application/json"
-                    )
-                    .build()
-
-            val response =
-                httpClient
-                    .newCall(request)
-                    .execute()
-
-            if (response.isSuccessful) {
-
-                Pair(
-                    true,
-                    "Added to cart."
-                )
-
-            } else {
-
-                Pair(
-                    false,
-                    "Could not add item."
-                )
-            }
-
-        } catch (e: Exception) {
-
-            Pair(
-                false,
-                "Cart connection error."
-            )
-        }
-    }
-}
-
-suspend fun updateCartQuantity(
-    token: String,
-    cartItemId: Int,
-    quantity: Int
-): Boolean {
-
-    return withContext(Dispatchers.IO) {
-
-        try {
-
-            val json =
-                JSONObject()
-
-            json.put(
-                "quantity",
-                quantity
-            )
-
-            val body =
-                json.toString()
-                    .toRequestBody(
-                        "application/json; charset=utf-8"
-                            .toMediaType()
-                    )
-
-            val request =
-                Request.Builder()
-                    .url(
-                        "$API_URL/cart/items/$cartItemId"
-                    )
-                    .patch(body)
-                    .addHeader(
-                        "Authorization",
-                        "Bearer $token"
-                    )
-                    .addHeader(
-                        "Content-Type",
-                        "application/json"
-                    )
-                    .build()
-
-            val response =
-                httpClient
-                    .newCall(request)
-                    .execute()
-
-            response.isSuccessful
-
-        } catch (e: Exception) {
-
-            false
-        }
-    }
-}
-
-suspend fun removeFromCart(
-    token: String,
-    cartItemId: Int
-): Boolean {
-
-    return withContext(Dispatchers.IO) {
-
-        try {
-
-            val request =
-                Request.Builder()
-                    .url(
-                        "$API_URL/cart/items/$cartItemId"
-                    )
-                    .delete()
-                    .addHeader(
-                        "Authorization",
-                        "Bearer $token"
-                    )
-                    .build()
-
-            val response =
-                httpClient
-                    .newCall(request)
-                    .execute()
-
-            response.isSuccessful
-
-        } catch (e: Exception) {
-
-            false
-        }
-    }
+  };
+
+  const addToCart = (productId) => {
+    run(
+      () =>
+        api("/cart/items", {
+          method: "POST",
+          body: {
+            productId,
+            qty: 1,
+          },
+        }),
+      "Added to cart",
+    );
+  };
+
+  const setQty = (productId, qty) => {
+    run(() =>
+      api(`/cart/items/${productId}`, {
+        method: "PATCH",
+        body: {
+          qty,
+        },
+      }),
+    );
+  };
+
+  const removeItem = (productId) => {
+    run(
+      () =>
+        api(`/cart/items/${productId}`, {
+          method: "DELETE",
+        }),
+      "Item removed",
+    );
+  };
+
+  const count = cart.items.reduce(
+    (sum, item) => sum + Number(item.qty || 0),
+    0,
+  );
+
+  if (booting) {
+    return <div className="boot">🛒 Loading your shop...</div>;
+  }
+
+  if (!user) {
+    return (
+      <>
+        <Login onAuth={handleAuth} />
+        <Toast toast={toast} />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Header
+        user={user}
+        count={count}
+        view={view}
+        setView={go}
+        onLogout={logout}
+      />
+
+      <main className="container">
+        {view === "shop" && <ProductList onAdd={addToCart} />}
+
+        {view === "cart" && (
+          <Cart
+            cart={cart}
+            onQty={setQty}
+            onRemove={removeItem}
+            onCheckout={() => go("checkout")}
+            onShop={() => go("shop")}
+            onOrders={() => go("orders")}
+          />
+        )}
+
+        {view === "checkout" && (
+          <Checkout
+            cart={cart}
+            user={user}
+            onPlaced={reloadCart}
+            onOrders={() => go("orders")}
+            onShop={() => go("shop")}
+          />
+        )}
+
+        {view === "orders" &&
+          (user.is_staff ? (
+            <AdminOrders notify={notify} />
+          ) : (
+            <Orders notify={notify} onShop={() => go("shop")} />
+          ))}
+      </main>
+
+      <Toast toast={toast} />
+    </>
+  );
 }
