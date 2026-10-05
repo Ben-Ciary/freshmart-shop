@@ -1,4 +1,5 @@
 /* ===== Checkout.css ===== */
+
 @import url("https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap");
 
 :root {
@@ -15,8 +16,11 @@
 }
 
 /* ---------- Page wrapper ---------- */
+
 section:has(> .checkout-layout) {
+  width: 100%;
   max-width: 1080px;
+  box-sizing: border-box;
   margin: 0 auto;
   padding: 32px 20px 64px;
   font-family: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -31,7 +35,9 @@ section:has(> .checkout-layout) {
 }
 
 /* ---------- Two-column layout ---------- */
+
 .checkout-layout {
+  width: 100%;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
   gap: 28px;
@@ -39,7 +45,11 @@ section:has(> .checkout-layout) {
 }
 
 /* ---------- Form card ---------- */
+
 form.checkout {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   background: var(--co-card);
   border: 1px solid var(--co-line);
   border-radius: 14px;
@@ -68,10 +78,12 @@ form.checkout input,
 form.checkout select,
 form.checkout textarea {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   box-sizing: border-box;
   padding: 12px 14px;
   font: inherit;
-  font-size: 1rem;
+  font-size: 16px;
   color: var(--co-ink);
   background: var(--co-bg);
   border: 1.5px solid var(--co-line);
@@ -99,6 +111,7 @@ form.checkout textarea:focus {
 }
 
 /* ---------- Pay note ---------- */
+
 .pay-note {
   margin: 20px 0 16px;
   padding: 12px 14px;
@@ -109,6 +122,7 @@ form.checkout textarea:focus {
 }
 
 /* ---------- Error ---------- */
+
 .error {
   margin-bottom: 8px;
   padding: 12px 14px;
@@ -120,9 +134,12 @@ form.checkout textarea:focus {
 }
 
 /* ---------- Buttons ---------- */
+
 .checkout .btn,
 .empty .btn {
+  box-sizing: border-box;
   display: inline-block;
+  max-width: 100%;
   padding: 12px 20px;
   font: inherit;
   font-size: 1rem;
@@ -174,7 +191,11 @@ form.checkout textarea:focus {
 }
 
 /* ---------- Order summary ---------- */
+
 .summary {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   position: sticky;
   top: 20px;
   padding: 24px;
@@ -194,6 +215,11 @@ form.checkout textarea:focus {
   border-bottom: 1px dashed var(--co-line);
 }
 
+.sum-row span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .sum-row span:last-child {
   font-weight: 600;
   white-space: nowrap;
@@ -209,9 +235,12 @@ form.checkout textarea:focus {
 }
 
 /* ---------- Success + empty states ---------- */
+
 .checkout.success,
 .empty {
+  width: 100%;
   max-width: 460px;
+  box-sizing: border-box;
   margin: 48px auto;
   padding: 40px 28px;
   text-align: center;
@@ -251,9 +280,16 @@ form.checkout textarea:focus {
   margin: 12px 6px 0;
 }
 
-/* ---------- Mobile ---------- */
+/* ---------- Tablet / Mobile ---------- */
+
 @media (max-width: 820px) {
+  section:has(> .checkout-layout) {
+    width: 100%;
+    padding: 24px 16px 50px;
+  }
+
   .checkout-layout {
+    width: 100%;
     grid-template-columns: 1fr;
   }
 
@@ -263,6 +299,7 @@ form.checkout textarea:focus {
   }
 
   form.checkout {
+    width: 100%;
     padding: 20px;
   }
 
@@ -271,7 +308,68 @@ form.checkout textarea:focus {
   }
 }
 
-/* ===== Toast (kept from your previous CSS) ===== */
+/* ---------- Phone ---------- */
+
+@media (max-width: 480px) {
+  section:has(> .checkout-layout) {
+    width: 100%;
+    padding: 18px 10px 40px;
+  }
+
+  .page-title {
+    font-size: 1.45rem;
+    margin-bottom: 14px;
+  }
+
+  .checkout-layout {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  form.checkout {
+    width: 100%;
+    padding: 16px;
+    border-radius: 10px;
+  }
+
+  form.checkout h3 {
+    font-size: 1.05rem;
+  }
+
+  form.checkout input,
+  form.checkout select,
+  form.checkout textarea {
+    width: 100%;
+    max-width: 100%;
+    font-size: 16px;
+  }
+
+  .summary {
+    width: 100%;
+    padding: 16px;
+    border-radius: 10px;
+  }
+
+  .sum-row {
+    font-size: 0.88rem;
+  }
+
+  /* Make checkout buttons fit the phone */
+  .checkout .btn,
+  .empty .btn,
+  .btn-block {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+
+/* ---------- Toast ---------- */
+
 .toast {
   position: fixed;
   left: 50%;
@@ -297,7 +395,7 @@ form.checkout textarea:focus {
 }
 
 .toast.ok {
-  background: var(--green-700, #1f6b45);
+  background: var(--co-green);
 }
 
 .toast.error {
@@ -309,6 +407,7 @@ form.checkout textarea:focus {
     opacity: 0;
     transform: translate(-50%, 16px);
   }
+
   to {
     opacity: 1;
     transform: translate(-50%, 0);
