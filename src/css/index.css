@@ -1,0 +1,25 @@
+body {
+  width: 100%;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: block !important;
+  place-items: normal !important;
+  min-width: 0 !important;
+  overflow-x: hidden;
+}
+
+#root {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  display: block !important;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
